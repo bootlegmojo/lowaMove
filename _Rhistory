@@ -1,0 +1,292 @@
+install.packages("gtools")
+train <- read.csv("iowadata.csv")
+View(train)
+View(train)
+#Remove ID
+train_noID <- train[,-1]
+shiny_data <- data.frame(input$num_toilets, input$garage_cars, input$years_since_remodel, input$overall_qual,
+input$num_rooms, input$basement_area, input$above_ground_living_area, input$lot_area,
+input$hood)
+names(shiny_data) <- c("toilets", "GarageCars", "YearsSinceRemodel", "OverallQual",
+"TotRmsAbvGrd", "TotalBsmtSF", "GrLivArea", "LotArea",
+"Neighborhood")
+#get data from shiny imput and SQL
+house_prediction <- function(input) {
+killDbConnections()
+#mydb <-dbConnect(MySQL(),
+#  user='root',
+#  password='root',
+#  dbname='iowamovedb',
+#  host='127.0.0.1',
+#  port=3306)
+#train <- dbGetQuery(mydb, "select * from iowa")
+dbDisconnect(mydb)
+train <- read.csv("iowadata.csv")
+#Remove ID
+train_noID <- train[,-1]
+#shiny_train <- data.frame(train_noID$toilets, train_noID$GarageCars, train_noID$YearsSinceRemodel, train_noID$OverallQual,
+#train_noID$TotRmsAbvGrd, train_noID$TotalBsmtSF, train_noID$GrLivArea, train_noID$LotArea, train_noID$Neighborhood)
+shiny_data <- data.frame(input$num_toilets, input$garage_cars, input$years_since_remodel, input$overall_qual,
+input$num_rooms, input$basement_area, input$above_ground_living_area, input$lot_area,
+input$hood)
+names(shiny_data) <- c("toilets", "GarageCars", "YearsSinceRemodel", "OverallQual",
+"TotRmsAbvGrd", "TotalBsmtSF", "GrLivArea", "LotArea",
+"Neighborhood")
+datafull <- smartbind(train_noID, shiny_data)
+train <- as.data.frame(datafull[1:nrow(datafull)-1,])
+test <- as.data.frame(datafull[nrow(datafull),])
+model <- lm(formula = SalePrice ~ GrLivArea * TotalBsmtSF + Neighborhood + LotArea + OverallQual + toilets + TotRmsAbvGrd + GarageCars + YearsSinceRemodel , data=datafull)
+predictions <- predict(model, test)
+print(predictions)
+return(predictions)
+}
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+ui <- fluidPage(titlePanel(h1("IowaHouses SalePrice Predictor")),
+fluidRow(
+column(3,
+sliderInput("num_toilets", h3("Number of Toilets"),
+min = 0, max = 10, value = 2)
+),
+column(3,
+sliderInput("garage_cars", h3("Number of Cars Storable in Garage"),
+min = 0, max = 10, value = 2)
+),
+column(3,
+sliderInput("years_since_remodel", h3("Years Since Last Remodeled"),
+min = 0, max = 100, value = 15)
+),
+column(3,
+sliderInput("overall_qual", h3("Overall Quality of Matireal and Finish on House"),
+min = 0, max = 10, value = 6)
+),
+column(3,
+numericInput("num_rooms",
+h3("Total Number of Rooms (Excluding Bathrooms)"),
+value = 6)
+),
+column(3,
+numericInput("basement_area",
+h3("Total SF of Basement Area"),
+value = 1000)
+),
+column(3,
+numericInput("above_ground_living_area",
+h3("Total SF of above grade (ground) Living Area"),
+value = 1400)
+),
+column(3,
+numericInput("lot_area",
+h3("Total Lot Area in SF"),
+value = 9000)
+),
+column(3,
+selectInput("hood", h3("Neighborhood"),
+choices = list("Bloomington Heights" = "Blmngtn",
+"Bluestem" = "Blueste",
+"Briardale" = "BrDale",
+"Brookside" = "BrkSide",
+"Clear Creek" = "ClearCr",
+"College Creek" = "CollgCr",
+"Crawford" = "Crawfor",
+"Edwards" = "Edwards",
+"Gilbert" = "Gilbert",
+"Iowa DOT and Rail Road" = "IDOTRR",
+"Meadow Village" = "MeadowV",
+"Mitchel" = "Mitchel",
+"North Ames" = "Names",
+"Northridge" = "NoRidge",
+"Northpark Villa" = "NPkVill",
+"Northridge Heights" = "NridgHt",
+"Northwest Ames" = "NWAmes",
+"Old Town" = "OldTown",
+"South & West of Iowa State University" = "SWISU",
+"Sawyer" = "Sawyer",
+"Sawyer West" = "SawyerW",
+"Somerset" = "Somerst",
+"Stone Brook" = "StoneBr",
+"Timberland" = "Timber",
+"Veenker" = "Veenker")
+)
+)
+),
+fluidRow(
+column(3,submitButton("Submit"))
+),
+fluidRow(
+column(6, h1("Predicted Price"),
+textOutput("Prediction")
+)
+)
+)
+library(shiny)
+library(rlang)
+ui <- fluidPage(titlePanel(h1("IowaHouses SalePrice Predictor")),
+fluidRow(
+column(3,
+sliderInput("num_toilets", h3("Number of Toilets"),
+min = 0, max = 10, value = 2)
+),
+column(3,
+sliderInput("garage_cars", h3("Number of Cars Storable in Garage"),
+min = 0, max = 10, value = 2)
+),
+column(3,
+sliderInput("years_since_remodel", h3("Years Since Last Remodeled"),
+min = 0, max = 100, value = 15)
+),
+column(3,
+sliderInput("overall_qual", h3("Overall Quality of Matireal and Finish on House"),
+min = 0, max = 10, value = 6)
+),
+column(3,
+numericInput("num_rooms",
+h3("Total Number of Rooms (Excluding Bathrooms)"),
+value = 6)
+),
+column(3,
+numericInput("basement_area",
+h3("Total SF of Basement Area"),
+value = 1000)
+),
+column(3,
+numericInput("above_ground_living_area",
+h3("Total SF of above grade (ground) Living Area"),
+value = 1400)
+),
+column(3,
+numericInput("lot_area",
+h3("Total Lot Area in SF"),
+value = 9000)
+),
+column(3,
+selectInput("hood", h3("Neighborhood"),
+choices = list("Bloomington Heights" = "Blmngtn",
+"Bluestem" = "Blueste",
+"Briardale" = "BrDale",
+"Brookside" = "BrkSide",
+"Clear Creek" = "ClearCr",
+"College Creek" = "CollgCr",
+"Crawford" = "Crawfor",
+"Edwards" = "Edwards",
+"Gilbert" = "Gilbert",
+"Iowa DOT and Rail Road" = "IDOTRR",
+"Meadow Village" = "MeadowV",
+"Mitchel" = "Mitchel",
+"North Ames" = "Names",
+"Northridge" = "NoRidge",
+"Northpark Villa" = "NPkVill",
+"Northridge Heights" = "NridgHt",
+"Northwest Ames" = "NWAmes",
+"Old Town" = "OldTown",
+"South & West of Iowa State University" = "SWISU",
+"Sawyer" = "Sawyer",
+"Sawyer West" = "SawyerW",
+"Somerset" = "Somerst",
+"Stone Brook" = "StoneBr",
+"Timberland" = "Timber",
+"Veenker" = "Veenker")
+)
+)
+),
+fluidRow(
+column(3,submitButton("Submit"))
+),
+fluidRow(
+column(6, h1("Predicted Price"),
+textOutput("Prediction")
+)
+)
+)
+shinyApp(ui = ui, server = server)
+library(scales)
+library(RMySQL)
+library(gtools)
+shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
+#get data from shiny imput and SQL
+house_prediction <- function(input) {
+#killDbConnections()
+#mydb <-dbConnect(MySQL(),
+#  user='root',
+#  password='root',
+#  dbname='iowamovedb',
+#  host='127.0.0.1',
+#  port=3306)
+#train <- dbGetQuery(mydb, "select * from iowa")
+#dbDisconnect(mydb)
+train <- read.csv("iowadata.csv")
+#Remove ID
+train_noID <- train[,-1]
+shiny_data <- data.frame(input$num_toilets, input$garage_cars, input$years_since_remodel, input$overall_qual,
+input$num_rooms, input$basement_area, input$above_ground_living_area, input$lot_area,
+input$hood)
+names(shiny_data) <- c("toilets", "GarageCars", "YearsSinceRemodel", "OverallQual",
+"TotRmsAbvGrd", "TotalBsmtSF", "GrLivArea", "LotArea",
+"Neighborhood")
+datafull <- smartbind(train_noID, shiny_data)
+train <- as.data.frame(datafull[1:nrow(datafull)-1,])
+test <- as.data.frame(datafull[nrow(datafull),])
+model <- lm(formula = SalePrice ~ GrLivArea * TotalBsmtSF + Neighborhood + LotArea + OverallQual + toilets + TotRmsAbvGrd + GarageCars + YearsSinceRemodel , data=datafull)
+predictions <- predict(model, test)
+print(predictions)
+return(predictions)
+}
+shinyApp(ui = ui, server = server)
+source("ui.R")
+source("iowa.R")
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+shinyApp(ui = ui, server = server)
+library(shiny)
+source("ui.R")
+source("iowa.R")
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+shinyApp(ui = ui, server = server)
+library(shiny)
+source("ui.R")
+source("iowa.R")
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+shinyApp(ui = ui, server = server)
+library(shiny)
+source("ui.R")
+source("iowa.R")
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+shinyApp(ui = ui, server = server)
+runApp()
+runApp()
+library(shiny)
+source("ui.R")
+source("iowa.R")
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+shinyApp(ui = ui, server = server)
+runApp()
+library(shiny)
+source("ui.R")
+source("iowa.R")
+server <- function(input, output) {
+output$Prediction<- renderText({
+paste("Predicted Value of $", as.integer(house_prediction(input)))
+})}
+shinyApp(ui = ui, server = server)
+shinyUI()
+runApp()
+runApp()
+runApp()
