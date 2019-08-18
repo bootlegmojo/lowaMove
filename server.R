@@ -1,8 +1,7 @@
 library(shiny)
 
 #setting work directory to current folder
-
-setwd("~/NathanIOWA")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 #runs through the data to add functions and ui to the r environment
 

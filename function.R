@@ -12,7 +12,7 @@ house_prediction <- function(input) {
   mydb <-dbConnect(MySQL(), 
                    user='root', 
                    password='root',
-                   dbname='iowamovedb', 
+                   dbname='iowa', 
                    host='127.0.0.1',
                    port=3306)
   
